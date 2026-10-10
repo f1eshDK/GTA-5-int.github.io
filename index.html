@@ -5,68 +5,104 @@
     <title>GTA5-int</title>
     <style>
         body {
-    margin: 0;
-    padding: 20px;
-    background-color: rgb(58, 75, 82); /* Цвет океана */
-    display: flex;
-    justify-content: center;
-}
+            margin: 0;
+            padding: 20px;
+            background-color: rgb(58, 75, 82); /* Цвет океана */
+            display: flex;
+            justify-content: center;
+        }
 
-/* Фиксируем размеры строго по пикселям исходника, чтобы метки не ехали */
-.map-container {
-    position: relative;
-    width: 684px;  
-    height: 1017px; 
-}
+        /* Фиксируем размеры строго по пикселям исходника, чтобы метки не ехали */
+        .map-container {
+            position: relative;
+            width: 684px;  
+            height: 1017px; 
+        }
 
-/* Картинка теперь жестко занимает 100% контейнера */
-.map-image {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
+        /* Картинка теперь жестко занимает 100% контейнера */
+        .map-image {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
-/* Общий стиль для всех меток */
-.marker {
-    position: absolute;
-    width: 6px; /* Чуть уменьшил, чтобы попадать точнее */
-    height: 6px;
-    background-color: red;
-    border: 1px solid white;
-    border-radius: 50%;
-    transform: translate(-50%, -50%); 
-    cursor: pointer;
-    z-index: 10;
-}
+        /* Общий стиль для всех меток */
+        .marker {
+            position: absolute;
+            width: 6px; /* Чуть уменьшил, чтобы попадать точнее */
+            height: 6px;
+            background-color: red;
+            border: 1px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%); 
+            cursor: pointer;
+            z-index: 10;
+        }
 
-/* Стиль для тыкв */
-.marker.pumpkin {
-    background-color: #ff8c00; 
-    border: 1px solid #228b22; 
-    box-shadow: 0 0 3px #ff8c00;
-}
+        /* Стиль для тыкв */
+        .marker.pumpkin {
+            background-color: #ff8c00; 
+            border: 1px solid #228b22; 
+            box-shadow: 0 0 3px #ff8c00;
+        }
 
-.marker::after {
-    content: attr(data-title);
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    display: none; 
-    font-family: Arial, sans-serif;
-    z-index: 20;
-}
+        /* Обновленный стиль всплывающего окна с текстом */
+        .marker::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: 25px; /* Чуть приподняли над меткой */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95); /* Темный стильный фон */
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+            white-space: pre-line; /* Позволяет переносить текст на новую строку */
+            display: none; 
+            z-index: 20;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #ff8c00; /* Оранжевая рамка под стиль Хэллоуина */
+            text-align: center;
+        }
 
-.marker:hover::after {
-    display: block;
-}
+        /* Показываем ТЕКСТОВУЮ подсказку только при наведении (hover), если скриншот не открыт */
+        .marker:hover::after {
+            display: block;
+        }
+        /* Если скриншот открыт, скрываем текстовую подсказку, чтобы она не мешала */
+        .marker.show-screenshot:hover::after {
+            display: none;
+        }
 
+        /* Базовый стиль скрытого скриншота */
+        .marker img {
+            display: none;
+            position: absolute;
+            bottom: 25px; /* Отображаем строго над тыквой */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 220px; /* Оптимальный размер для скриншота */
+            height: auto;
+            border: 2px solid #ff8c00;
+            border-radius: 6px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            pointer-events: none; /* Чтобы картинка не мешала кликать по карте */
+        }
+
+        /* Класс, который JavaScript будет добавлять для показа скриншота */
+        .marker.show-screenshot img {
+            display: block;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        /* Плавное появление */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -77,18 +113,24 @@
         <!-- Картинка фона -->
         <img src="./map.jpg" alt="Карта" class="map-image">
         
-<!-- ТОЧНЫЕ 10 ТЫКВ В ПУСТЫНЕ ГРАНД-СЕНОРА (СЭНДИ-ШОРС) — СКОРРЕКТИРОВАНО -->
-<div class="marker pumpkin" style="left: 56.4%; top: 34.1%;" data-title="Тыква 11: Трейлер Тревора в Сэнди-Шорс"></div>
-<div class="marker pumpkin" style="left: 54.1%; top: 32.2%;" data-title="Тыква 12: Мотель Derelict на Алгонкин-бульваре"></div>
-<div class="marker pumpkin" style="left: 58.2%; top: 31.8%;" data-title="Тыква 13: Около лодочной станции Marina Drive"></div>
-<div class="marker pumpkin" style="left: 51.5%; top: 35.8%;" data-title="Тыква 14: Спутниковые антенны Big Ear (север пустыни)"></div>
-<div class="marker pumpkin" style="left: 48.2%; top: 39.1%;" data-title="Тыква 15: Аэродром Сэнди-Шорс (около ангара)"></div>
-<div class="marker pumpkin" style="left: 45.0%; top: 40.8%;" data-title="Тыква 16: Заправка RON Alterna в пустыне"></div>
-<div class="marker pumpkin" style="left: 41.8%; top: 41.5%;" data-title="Тыква 17: Около тату-салона в Гранд-Сенора"></div>
-<div class="marker pumpkin" style="left: 59.8%; top: 38.3%;" data-title="Тыква 18: Мотель под открытым небом (желтый фургон)"></div>
-<div class="marker pumpkin" style="left: 63.4%; top: 33.5%;" data-title="Тыква 19: Ферма в Грейпсид (под навесом трактора)"></div>
-<div class="marker pumpkin" style="left: 65.1%; top: 30.2%;" data-title="Тыква 20: Магазин одежды Discount Store в Грейпсид"></div>
-
+        <!-- ТОЧНЫЕ 10 ТЫКВ В ПУСТЫНЕ ГРАНД-СЕНОРА (СЭНДИ-ШОРС) — СКОРРЕКТИРОВАНО -->
+        <div class="marker pumpkin" style="left: 56.4%; top: 34.1%;" data-title="Тыква 11: Трейлер Тревора в Сэнди-Шорс"></div>
+        <div class="marker pumpkin" style="left: 54.1%; top: 32.2%;" data-title="Тыква 12: Мотель Derelict на Алгонкин-бульваре"></div>
+        <div class="marker pumpkin" style="left: 58.2%; top: 31.8%;" data-title="Тыква 13: Около лодочной станции Marina Drive"></div>
+        <div class="marker pumpkin" style="left: 51.5%; top: 35.8%;" data-title="Тыква 14: Спутниковые антенны Big Ear (север пустыни)"></div>
+        <div class="marker pumpkin" style="left: 48.2%; top: 39.1%;" data-title="Тыква 15: Аэродром Сэнди-Шорс (около ангара)"></div>
+        <div class="marker pumpkin" style="left: 45.0%; top: 40.8%;" data-title="Тыква 16: Заправка RON Alterna в пустыне"></div>
+        <div class="marker pumpkin" style="left: 41.8%; top: 41.5%;" data-title="Тыква 17: Около тату-салона в Гранд-Сенора"></div>
+        <div class="marker pumpkin" style="left: 59.8%; top: 38.3%;" data-title="Тыква 18: Мотель под открытым небом (желтый фургон)"></div>
+        <div class="marker pumpkin" style="left: 63.4%; top: 33.5%;" data-title="Тыква 19: Ферма в Грейпсид (под навесом трактора)"></div>
+        <div class="marker pumpkin" style="left: 49.3%; top: 19.3%;" data-title="Вершина горы Чилиад">
+            <!-- Ссылка на ваш скриншот в папке проекта -->
+            <img src="./points/1.jpg" alt="Скриншот">
+        </div>
+        <div class="marker pumpkin" style="left: 65.1%; top: 30.2%;" data-title="Тыква 20: Магазин одежды Discount Store в Грейпсид">
+            <!-- Ссылка на ваш скриншот в папке проекта -->
+            <img src="./points/1.jpg" alt="Скриншот">
+        </div>
 
     </div>
 
@@ -115,6 +157,34 @@
             marker.style.transform = `translate(-50%, -50%) scale(${1 / scale})`;
         });
     }, { passive: false });
+</script>
+
+<script>
+    // 1. Обработка клика по тыквам
+    document.querySelectorAll('.marker.pumpkin').forEach(marker => {
+        marker.addEventListener('click', (event) => {
+            // Останавливаем всплытие клика, чтобы карта не закрыла скриншот сразу же
+            event.stopPropagation(); 
+            
+            // Если этот скриншот уже открыт — закрываем его
+            if (marker.classList.contains('show-screenshot')) {
+                marker.classList.remove('show-screenshot');
+            } else {
+                // Закрываем ВСЕ остальные открытые скриншоты на карте
+                document.querySelectorAll('.marker.pumpkin').forEach(m => m.classList.remove('show-screenshot'));
+                
+                // Открываем скриншот текущей тыквы
+                marker.classList.add('show-screenshot');
+            }
+        });
+    });
+
+    // 2. Убираем скриншот, если пользователь кликнул в любое пустое место карты
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.marker.pumpkin').forEach(marker => {
+            marker.classList.remove('show-screenshot');
+        });
+    });
 </script>
 
 </body>
