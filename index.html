@@ -92,5 +92,30 @@
 
     </div>
 
+<script>
+    const container = document.querySelector('.map-container');
+    let scale = 1;
+
+    // Приближение/отдаление на колесико мыши удерживая Ctrl (или просто при прокрутке)
+    window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        // Меняем масштаб контейнера
+        if (e.deltaY < 0) {
+            scale = Math.min(scale + 0.1, 4); // Макс зум в 4 раза
+        } else {
+            scale = Math.max(scale - 0.1, 1); // Мин зум — исходный
+        }
+        
+        container.style.transform = `scale(${scale})`;
+        container.style.transformOrigin = `${e.offsetX}px ${e.offsetY}px`;
+
+        // Важная магия: уменьшаем сами маркеры во столько же раз, во сколько увеличили карту!
+        document.querySelectorAll('.marker').forEach(marker => {
+            marker.style.transform = `translate(-50%, -50%) scale(${1 / scale})`;
+        });
+    }, { passive: false });
+</script>
+
 </body>
 </html>
