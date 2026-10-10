@@ -103,6 +103,15 @@
             from { opacity: 0; transform: translateX(-50%) translateY(5px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
+
+        /* Стиль для собранной (отмеченной) тыквы */
+        .marker.pumpkin.collected {
+           background-color: #666666; /* Серый цвет */
+           border: 1px solid #999999; /* Серая рамка */
+           box-shadow: none;           /* Выключаем оранжевое свечение */
+           opacity: 0.5;               /* Делаем полупрозрачной */
+        }
+
     </style>
 </head>
 <body>
@@ -339,42 +348,62 @@
 </script>
 
 <script>
-    // 1. Обработка клика по тыквам
-    document.querySelectorAll('.marker.pumpkin').forEach(marker => {
-        marker.addEventListener('click', (event) => {
-            // Останавливаем всплытие клика, чтобы карта не закрыла скриншот сразу же
+    const mapContainer = document.querySelector('.map-container');
+
+    // Находим все тыквы на карте и присваиваем им ID автоматически по порядку,
+    // если вы забыли прописать их вручную в HTML (например: p1, p2, p3...)
+    document.querySelectorAll('.marker.pumpkin').forEach((marker, index) => {
+        if (!marker.id) {
+            marker.id = 'p' + (index + 1);
+        }
+        
+        // Проверяем память браузера: если эта тыква была собрана ранее, делаем её серой
+        if (localStorage.getItem(marker.id) === 'collected') {
+            marker.classList.add('collected');
+        }
+    });
+
+    // ОБРАБОТКА КЛИКОВ
+    mapContainer.addEventListener('click', (event) => {
+        const clickedMarker = event.target.closest('.marker.pumpkin');
+
+        if (clickedMarker) {
             event.stopPropagation(); 
             
-            // Если этот скриншот уже открыт — закрываем его
-            if (marker.classList.contains('show-screenshot')) {
-                marker.classList.remove('show-screenshot');
+            // Если кликнули по самой картинке скриншота внутри тултипа — ничего не делаем
+            if (event.target.tagName === 'IMG') return;
+
+            // ЛОГИКА СБОРА ТЫКВЫ: переключаем серый класс (собрано / не собрано)
+            // Игрок кликает по точке — она становится серой. Кликает еще раз — снова оранжевой.
+            if (clickedMarker.classList.contains('collected')) {
+                clickedMarker.classList.remove('collected');
+                localStorage.removeItem(clickedMarker.id); // Удаляем из памяти
             } else {
-                // Закрываем ВСЕ остальные открытые скриншоты на карте
-                document.querySelectorAll('.marker.pumpkin').forEach(m => m.classList.remove('show-screenshot'));
-                
-                // Открываем скриншот текущей тыквы
-                marker.classList.add('show-screenshot');
+                clickedMarker.classList.add('collected');
+                localStorage.setItem(clickedMarker.id, 'collected'); // Сохраняем в память
             }
-        });
-    });
 
-    // 2. Убираем скриншот, если пользователь кликнул в любое пустое место карты
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.marker.pumpkin').forEach(marker => {
-            marker.classList.remove('show-screenshot');
-        });
-    });
-</script>
+            // ЛОГИКА ДЛЯ ИГРОКА: Показ скриншота при клике
+            if (clickedMarker.classList.contains('show-screenshot')) {
+                clickedMarker.classList.remove('show-screenshot');
+            } else {
+                document.querySelectorAll('.marker.pumpkin').forEach(m => m.classList.remove('show-screenshot'));
+                clickedMarker.classList.add('show-screenshot');
+            }
 
-<script>
-    // Скрипт для разработчика: кликните в любое место карты, 
-    // и в консоли браузера (F12) появится готовая строчка кода с процентами!
-    document.querySelector('.map-container').addEventListener('click', function(e) {
-        const rect = this.getBoundingClientRect();
-        const left = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
-        const top = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
-        
-        console.log(`<div class="marker pumpkin" style="left: ${left}%; top: ${top}%;" data-title="Тыква"></div>`);
+        } else {
+            // ЛОГИКА ДЛЯ РАЗРАБОТЧИКА: Клик мимо — выдаем проценты координат в консоль (F12)
+            const rect = mapContainer.getBoundingClientRect();
+            const left = ((event.clientX - rect.left) / rect.width * 100).toFixed(1);
+            const top = ((event.clientY - rect.top) / rect.height * 100).toFixed(1);
+            
+            console.log(`<div class="marker pumpkin" style="left: ${left}%; top: ${top}%;" data-title="Тыква №: Описание"></div>`);
+
+            // Закрываем скриншоты при клике на пустое место карты
+            document.querySelectorAll('.marker.pumpkin').forEach(marker => {
+                marker.classList.remove('show-screenshot');
+            });
+        }
     });
 </script>
 
