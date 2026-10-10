@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>GTA5-int</title>
+    <style>
+        body {
+    margin: 0;
+    padding: 20px;
+    background-color: rgb(58, 75, 82); /* Цвет океана */
+    display: flex;
+    justify-content: center;
+}
+
+/* Фиксируем размеры строго по пикселям исходника, чтобы метки не ехали */
+.map-container {
+    position: relative;
+    width: 684px;  
+    height: 1017px; 
+}
+
+/* Картинка теперь жестко занимает 100% контейнера */
+.map-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Общий стиль для всех меток */
+.marker {
+    position: absolute;
+    width: 12px; /* Чуть уменьшил, чтобы попадать точнее */
+    height: 12px;
+    background-color: red;
+    border: 2px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%); 
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* Стиль для тыкв */
+.marker.pumpkin {
+    background-color: #ff8c00; 
+    border: 2px solid #228b22; 
+    box-shadow: 0 0 6px #ff8c00;
+}
+
+.marker::after {
+    content: attr(data-title);
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    display: none; 
+    font-family: Arial, sans-serif;
+    z-index: 20;
+}
+
+.marker:hover::after {
+    display: block;
+}
+
+    </style>
+</head>
+<body>
+
+    <!-- Контейнер с картой -->
+    <div class="map-container">
+        
+        <!-- Картинка фона -->
+        <img src="./map.jpg" alt="Карта" class="map-image">
+        
+        <!-- ТОЧНЫЕ 10 ТЫКВ В ПАЛЕТО-БЭЙ (опущены ниже, прямо на свои места) -->
+<div class="marker pumpkin" style="left: 45.4%; top: 12.3%;" data-title="Тыква 1: Вход в Банк Блейн-Каунти"></div>
+<div class="marker pumpkin" style="left: 47.1%; top: 11.4%;" data-title="Тыква 2: Дом за Beeker's Garage"></div>
+<div class="marker pumpkin" style="left: 48.9%; top: 11.0%;" data-title="Тыква 3: Веранда дома на Прокопио Драйв"></div>
+<div class="marker pumpkin" style="left: 50.4%; top: 11.3%;" data-title="Тыква 4: Соседний дом по Прокопио Драйв"></div>
+<div class="marker pumpkin" style="left: 52.1%; top: 11.8%;" data-title="Тыква 5: Мотель Dream View на Пайрит Авеню"></div>
+<div class="marker pumpkin" style="left: 54.2%; top: 12.5%;" data-title="Тыква 6: Церковь Святой Бригид"></div>
+<div class="marker pumpkin" style="left: 42.4%; top: 13.5%;" data-title="Тыква 7: Внутри пожарной станции Палето-Бэй"></div>
+<div class="marker pumpkin" style="left: 39.8%; top: 14.3%;" data-title="Тыква 8: Вывеска Канатной дороги Paleto Springs"></div>
+<div class="marker pumpkin" style="left: 69.3%; top: 11.4%;" data-title="Тыква 9: Заправка Globe Oil на Прокопио"></div>
+<div class="marker pumpkin" style="left: 83.2%; top: 13.9%;" data-title="Тыква 10: У Braddock Farm подножие Чилиад"></div>
+
+
+    </div>
+
+</body>
+</html>
