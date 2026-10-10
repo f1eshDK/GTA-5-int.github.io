@@ -104,13 +104,19 @@
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* Стиль для собранной (отмеченной) тыквы */
+        /* ИСПРАВЛЕНО: Свойство opacity применяется только к фону и рамке самой точки */
         .marker.pumpkin.collected {
-           background-color: #666666; /* Серый цвет */
-           border: 1px solid #999999; /* Серая рамка */
-           box-shadow: none;           /* Выключаем оранжевое свечение */
-           opacity: 0.5;               /* Делаем полупрозрачной */
+            background-color: rgba(102, 102, 102, 0.5); /* Серый цвет с прозрачностью 50% */
+            border: 1px solid rgba(153, 153, 153, 0.5); /* Серая рамка с прозрачностью 50% */
+            box-shadow: none;                            /* Выключаем оранжевое свечение */
         }
+
+/* Принудительно возвращаем скриншоту внутри собранной тыквы 100% яркость */
+.marker.pumpkin.collected img {
+    opacity: 1 !important;
+    filter: none !important;
+}
+
 
     </style>
 </head>
