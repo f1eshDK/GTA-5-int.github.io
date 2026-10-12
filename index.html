@@ -31,10 +31,13 @@
         /* Общий стиль для всех меток */
         .marker {
             position: absolute;
-            width: 6px; /* Чуть уменьшил, чтобы попадать точнее */
-            height: 6px;
+    
+        /* ИСПРАВЛЕНО: размер теперь динамически рассчитывается JavaScript-переменной */
+            width: calc(6px / var(--marker-zoom, 1));
+            height: calc(6px / var(--marker-zoom, 1));
+            border: calc(6px / var(--marker-zoom, 1)) solid white;
+    
             background-color: red;
-            border: 1px solid white;
             border-radius: 50%;
             transform: translate(-50%, -50%); 
             cursor: pointer;
@@ -425,6 +428,18 @@
             });
         }
     });
+
+    // СЛУШАТЕЛЬ ДЛЯ УМЕНЬШЕНИЯ МЕТОК ПРИ СТАНДАРТНОМ ЗУМЕ БРАУЗЕРА
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            // Получаем текущий масштаб страницы (на смартфонах при щипке он станет 2, 3, 4 и т.д.)
+            const currentZoom = window.visualViewport.scale;
+            
+            // Передаем этот масштаб в CSS-переменную карты
+            mapContainer.style.setProperty('--marker-zoom', currentZoom);
+        });
+    }
+    
 </script>
 
 
