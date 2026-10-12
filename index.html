@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GTA5-int</title>
     <style>
         body {
@@ -354,25 +355,72 @@
     const container = document.querySelector('.map-container');
     let scale = 1;
 
-    // Приближение/отдаление на колесико мыши удерживая Ctrl (или просто при прокрутке)
-    window.addEventListener('wheel', (e) => {
-        e.preventDefault();
+    // Функция, которая одинаково обновляет масштаб на любых устройствах
+    function updateScale(newScale, originX, originY) {
+        scale = Math.max(1, Math.min(newScale, 4)); // Ограничение зума от 1х до 4х
         
-        // Меняем масштаб контейнера
-        if (e.deltaY < 0) {
-            scale = Math.min(scale + 0.1, 4); // Макс зум в 4 раза
-        } else {
-            scale = Math.max(scale - 0.1, 1); // Мин зум — исходный
-        }
-        
+        container.style.transformOrigin = `${originX}px ${originY}px`;
         container.style.transform = `scale(${scale})`;
-        container.style.transformOrigin = `${e.offsetX}px ${e.offsetY}px`;
 
-        // Важная магия: уменьшаем сами маркеры во столько же раз, во сколько увеличили карту!
+        // Магия для мобильных и ПК: уменьшаем сами маркеры во столько же раз, во сколько увеличили карту
         document.querySelectorAll('.marker').forEach(marker => {
             marker.style.transform = `translate(-50%, -50%) scale(${1 / scale})`;
         });
+    }
+
+    // 1. ЛОГИКА ДЛЯ ПК (Колесико мыши)
+    window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        let newScale = e.deltaY < 0 ? scale + 0.1 : scale - 0.1;
+        updateScale(newScale, e.offsetX, e.offsetY);
     }, { passive: false });
+
+    // 2. ЛОГИКА ДЛЯ МОБИЛЬНЫХ (Жест щипка двумя пальцами)
+    let startDist = 0;
+    let startScale = 1;
+
+    // Считаем расстояние между двумя пальцами
+    function getDistance(t1, t2) {
+        return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    }
+
+    // Считаем центр между двумя пальцами для точки фокуса зума
+    function getMidpoint(t1, t2, rect) {
+        return {
+            x: ((t1.clientX + t2.clientX) / 2) - rect.left,
+            y: ((t1.clientY + t2.clientY) / 2) - rect.top
+        };
+    }
+
+    window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault(); // Запрещаем стандартный зум браузера
+            startDist = getDistance(e.touches[0], e.touches[1]);
+            startScale = scale;
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && startDist > 0) {
+            e.preventDefault();
+            
+            const currentDist = getDistance(e.touches[0], e.touches[1]);
+            const factor = currentDist / startDist;
+            const newScale = startScale * factor;
+            
+            const rect = container.getBoundingClientRect();
+            const center = getMidpoint(e.touches[0], e.touches[1], rect);
+            
+            // Передаем координаты центра между пальцами, чтобы зум шёл туда, куда жмёт пользователь
+            updateScale(newScale, center.x / scale, center.y / scale);
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            startDist = 0;
+        }
+    });
 </script>
 
 <script>
