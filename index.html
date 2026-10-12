@@ -19,6 +19,10 @@
             position: relative;
             width: 684px;  
             height: 1017px; 
+            
+            transform-origin: center center; /* Зум будет идти строго в центр карты */
+            transform: scale(var(--pc-zoom, 1));
+            transition: transform 0.1s ease-out; /* Плавность при прокрутке колесика */
         }
 
         /* Картинка теперь жестко занимает 100% контейнера */
@@ -33,9 +37,9 @@
             position: absolute;
     
         /* ИСПРАВЛЕНО: размер теперь динамически рассчитывается JavaScript-переменной */
-            width: calc(6px / var(--marker-zoom, 1));
-            height: calc(6px / var(--marker-zoom, 1));
-            border: calc(6px / var(--marker-zoom, 1)) solid white;
+            width: calc(6px / (var(--marker-zoom, 1) * var(--pc-zoom, 1)));
+            height: calc(6px / (var(--marker-zoom, 1) * var(--pc-zoom, 1)));
+            border: calc(2px / (var(--marker-zoom, 1) * var(--pc-zoom, 1))) solid white;
     
             background-color: red;
             border-radius: 50%;
@@ -357,6 +361,7 @@
 </div>
 
 <script>
+
     const mapContainer = document.querySelector('.map-container');
 
     // Находим все тыквы на карте и присваиваем им ID автоматически по порядку,
@@ -439,7 +444,24 @@
             mapContainer.style.setProperty('--marker-zoom', currentZoom);
         });
     }
-    
+
+    // ЗУМ НА КОЛЕСИКО МЫШИ ДЛЯ ПК
+    let pcScale = 1;
+
+    mapContainer.addEventListener('wheel', (e) => {
+        e.preventDefault(); // Запрещаем прокрутку самой страницы вверх-вниз
+
+        // Если крутим вверх — приближаем, вниз — отдаляем
+        if (e.deltaY < 0) {
+            pcScale = Math.min(pcScale + 0.2, 4); // Максимальный зум в 4 раза
+        } else {
+            pcScale = Math.max(pcScale - 0.2, 1); // Минимальный зум — исходный (1х)
+        }
+
+        // Передаем значение в CSS
+        mapContainer.style.setProperty('--pc-zoom', pcScale);
+    }, { passive: false });
+
 </script>
 
 
