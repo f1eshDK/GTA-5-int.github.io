@@ -13,18 +13,22 @@
             justify-content: center;
         }
 
-        /* Фиксируем размеры строго по пикселям исходника, чтобы метки не ехали */
+        /* Найдите .map-container в вашем CSS и замените его свойства на эти: */
         .map-container {
             position: relative;
             width: 684px;  
             height: 1017px; 
+    
+        /* ИСПРАВЛЕНО: transform-origin теперь строго по центру, а карта двигается за счет X и Y */
+            transform-origin: center center;
+            transform: translate(var(--map-x, 0px), var(--map-y, 0px)) scale(var(--map-scale, 1));
+    
+            cursor: grab; /* Курсор руки для перетаскивания */
+            user-select: none; /* Запрещаем выделение картинок при перетаскивании */
         }
 
-        /* Картинка теперь жестко занимает 100% контейнера */
-        .map-image {
-            width: 100%;
-            height: 100%;
-            display: block;
+        .map-container:active {
+            cursor: grabbing; /* Курсор сжатой руки при удержании мыши */
         }
 
         /* Общий стиль для всех меток */
@@ -118,27 +122,27 @@
             box-shadow: none;                            /* Выключаем оранжевое свечение */
         }
 
-/* Принудительно возвращаем scriny внутри собранной тыквы 100% яркость */
-.marker.pumpkin.collected img {
-    opacity: 1 !important;
-    filter: none !important;
-}
+        /* Принудительно возвращаем scriny внутри собранной тыквы 100% яркость */
+        .marker.pumpkin.collected img {
+            opacity: 1 !important;
+            filter: none !important;
+        }
 
-/* Стилизация текста ALT, пока картинка-скриншот не загрузилась */
-.marker.pumpkin img {
-    color: #ffa600; 
-    font-family: 'Segoe UI', Impact, Arial, 'Comic Sans MS'; 
-    font-size: 12px; 
-    font-weight: bold; 
-    text-align: center;
+        /* Стилизация текста ALT, пока картинка-скриншот не загрузилась */
+        .marker.pumpkin img {
+            color: #ffa600; 
+            font-family: 'Segoe UI', Impact, Arial, 'Comic Sans MS'; 
+            font-size: 12px; 
+            font-weight: bold; 
+            text-align: center;
 
-    /* Идеальная черная обводка во все стороны */
-    text-shadow: 
-        -1px -1px 0 #000,  
-        1px -1px 0 #000,
-        -1px  1px 0 #000,
-        1px  1px 0 #000;
-}
+        /* Идеальная черная обводка во все стороны */
+            text-shadow: 
+            -1px -1px 0 #000,  
+            1px -1px 0 #000,
+            -1px  1px 0 #000,
+            1px  1px 0 #000;
+        }
 
     </style>
 </head>
@@ -353,81 +357,112 @@
 
 <script>
     const container = document.querySelector('.map-container');
+    
+    // Переменные состояния карты
     let scale = 1;
+    let posX = 0;
+    let posY = 0;
+    
+    // Переменные для перетаскивания (Drag & Drop)
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    
+    // Переменные для мобильного зума
+    let startDist = 0;
+    let startScale = 1;
 
-    // Безопасная функция обновления масштаба без резких прыжков карты
-    function updateScale(newScale, originX, originY) {
-        const oldScale = scale;
-        scale = Math.max(1, Math.min(newScale, 4)); // Зум от 1х до 4х
-
-        // Если масштаб изменился, корректируем CSS-переменную для скриншотов
+    // Главная функция отрисовки изменений
+    function applyTransform() {
         container.style.setProperty('--map-scale', scale);
-        
-        container.style.transformOrigin = `${originX}px ${originY}px`;
-        container.style.transform = `scale(${scale})`;
+        container.style.setProperty('--map-x', `${posX}px`);
+        container.style.setProperty('--map-y', `${posY}px`);
+        container.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
 
-        // Уменьшаем маркеры, чтобы они оставались точечными, но скриншот внутри них защищен через CSS var
+        // Корректируем размер точек, чтобы они не становились гигантскими
         document.querySelectorAll('.marker').forEach(marker => {
             marker.style.transform = `translate(-50%, -50%) scale(${1 / scale})`;
         });
     }
 
-    // 1. ИСПРАВЛЕННОЕ УПРАВЛЕНИЕ ДЛЯ ПК (Колесико мыши)
+    // 1. УПРАВЛЕНИЕ МАСШТАБОМ НА ПК (Колесико мыши — зум строго в центр экрана)
     window.addEventListener('wheel', (e) => {
         e.preventDefault();
         
-        // Плавный зум в зависимости от направления прокрутки
-        let zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+        let zoomFactor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
         let newScale = scale * zoomFactor;
         
-        updateScale(newScale, e.offsetX, e.offsetY);
+        // Ограничение зума от 1х до 5х
+        scale = Math.max(1, Math.min(newScale, 5));
+        
+        // Если вернулись к 1х — сбрасываем сдвиг, чтобы карта встала по центру
+        if (scale === 1) { posX = 0; posY = 0; }
+        
+        applyTransform();
     }, { passive: false });
 
-    // 2. ИСПРАВЛЕННОЕ УПРАВЛЕНИЕ ДЛЯ МОБИЛЬНЫХ (Щипок без улетов в океан)
-    let startDist = 0;
-    let startScale = 1;
-    let touchOriginX = 0;
-    let touchOriginY = 0;
-
-    function getDistance(t1, t2) {
-        return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    // 2. ОБЩАЯ ЛОГИКА ПЕРЕТАСКИВАНИЯ (ПК и Мобильные)
+    function startDrag(clientX, clientY) {
+        isDragging = true;
+        startX = clientX - posX;
+        startY = clientY - posY;
     }
 
+    function moveDrag(clientX, clientY) {
+        if (!isDragging) return;
+        
+        // Разрешаем двигать карту, только если она хоть немного приближена
+        if (scale > 1) {
+            posX = clientX - startX;
+            posY = clientY - startY;
+            applyTransform();
+        }
+    }
+
+    function stopDrag() {
+        isDragging = false;
+    }
+
+    // Слушатели для ПК (Мышь)
+    window.addEventListener('mousedown', (e) => {
+        // Игнорируем клики по маркерам, чтобы не мешать сбору тыкв
+        if (e.target.closest('.marker')) return; 
+        startDrag(e.clientX, e.clientY);
+    });
+    window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    window.addEventListener('mouseup', stopDrag);
+
+    // Слушатели для МОБИЛЬНЫХ (Тач-события)
     window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
-            
-            startDist = getDistance(t1, t2);
+        if (e.target.closest('.marker')) return;
+
+        if (e.touches.length === 1) {
+            // Перетаскивание одним пальцем
+            startDrag(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (e.touches.length === 2) {
+            // Зум двумя пальцами (Pinch)
+            isDragging = false; // Отключаем перетаскивание при зуме
+            startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             startScale = scale;
-            
-            // Фиксируем точку центра между пальцами строго в момент касания
-            const rect = container.getBoundingClientRect();
-            touchOriginX = ((t1.clientX + t2.clientX) / 2 - rect.left) / scale;
-            touchOriginY = ((t1.clientY + t2.clientY) / 2 - rect.top) / scale;
         }
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && startDist > 0) {
+        if (e.touches.length === 1) {
+            // Движение пальца — перемещаем карту
+            moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+        } else if (e.touches.length === 2 && startDist > 0) {
             e.preventDefault();
-            
-            const currentDist = getDistance(e.touches[0], e.touches[1]);
-            const factor = currentDist / startDist;
-            
-            // Зум плавно умножается, удерживая зафиксированный при touchstart центр
-            let newScale = startScale * factor;
-            
-            updateScale(newScale, touchOriginX * scale, touchOriginY * scale);
+            // Раздвижение пальцев — меняем масштаб
+            const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            scale = Math.max(1, Math.min(startScale * (currentDist / startDist), 5));
+            applyTransform();
         }
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2) {
-            startDist = 0;
-        }
+        if (e.touches.length === 0) stopDrag();
+        if (e.touches.length < 2) startDist = 0;
     });
 </script>
 
