@@ -20,9 +20,9 @@
             width: 684px;  
             height: 1017px; 
             
-            transform-origin: center center; /* Зум будет идти строго в центр карты */
-            transform: scale(var(--pc-zoom, 1));
-            transition: transform 0.1s ease-out; /* Плавность при прокрутке колесика */
+            transform-origin: 0 0;
+            transform: translate(var(--zoom-x, 0px), var(--zoom-y, 0px)) scale(var(--map-scale, 1));
+            transition: transform 0.1s ease-out;
         }
 
         /* Картинка теперь жестко занимает 100% контейнера */
@@ -36,22 +36,23 @@
         .marker {
             position: absolute;
     
-        /* ИСПРАВЛЕНО: размер теперь динамически рассчитывается JavaScript-переменной */
-            width: calc(6px / (var(--marker-zoom, 1) * var(--pc-zoom, 1)));
-            height: calc(6px / (var(--marker-zoom, 1) * var(--pc-zoom, 1)));
-            border: calc(2px / (var(--marker-zoom, 1) * var(--pc-zoom, 1))) solid white;
+        /* Уменьшаем физический размер точки при зуме на ПК или на телефоне */
+            width: calc(12px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
+            aspect-ratio: 1 / 1; /* ЖЕСТКАЯ СВЯЗКА: высота всегда равна ширине (пропорция 1 к 1) */
+            border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid white;
     
             background-color: red;
             border-radius: 50%;
             transform: translate(-50%, -50%); 
             cursor: pointer;
             z-index: 10;
+            box-sizing: border-box; 
         }
 
         /* Стиль для тыкв */
         .marker.pumpkin {
             background-color: #ff8c00; 
-            border: 1px solid #ff8c00; 
+            border: 1px solid #36bb2a; 
             box-shadow: 0 0 3px #ff8c00;
         }
 
@@ -92,13 +93,17 @@
             bottom: 25px; /* Отображаем строго над тыквой */
             left: 50%;
             transform: translateX(-50%);
-            width: 360px; /* Оптимальный размер для скрина */
-            height: auto;
-            border: 2px solid #ff8c00;
+            /* МАГИЯ: Скриншот уменьшается пропорционально зуму, чтобы не становиться гигантским на весь экран */
+            width: calc(320px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
+            aspect-ratio: 16 / 9; /* ЖЕСТКАЯ СВЯЗКА: скриншот всегда держит игровое соотношение 16:9 */
+            height: auto; /* Браузер сам выставит высоту на базе аспекта */
+            
+            border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid #ff8c00;
             border-radius: 6px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
             z-index: 100;
             pointer-events: none; /* Чтобы картинка не мешала кликать по карте */
+            object-fit: cover;
         }
 
         /* Класс, который JavaScript будет добавлять для показа скрина */
@@ -361,107 +366,102 @@
 </div>
 
 <script>
-
     const mapContainer = document.querySelector('.map-container');
 
-    // Находим все тыквы на карте и присваиваем им ID автоматически по порядку,
-    // если вы забыли прописать их вручную в HTML (например: p1, p2, p3...)
+    // Настройки для ПК-зума за курсором
+    let scale = 1;
+    let posX = 0;
+    let posY = 0;
+
+    // 1. УМНЫЙ ЗУМ ЗА МЫШКОЙ (ПК)
+    mapContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+
+        const rect = mapContainer.getBoundingClientRect();
+        // Находим координаты мышки относительно самой карты
+        const mouseX = (e.clientX - rect.left) / scale;
+        const mouseY = (e.clientY - rect.top) / scale;
+
+        // Рассчитываем новый масштаб
+        const zoomFactor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+        const nextScale = Math.max(1, Math.min(scale * zoomFactor, 5)); // Макс зум 5х
+
+        // Корректируем сдвиг X и Y, чтобы точка под курсором осталась на месте
+        posX = e.clientX - rect.left - mouseX * nextScale + posX;
+        posY = e.clientY - rect.top - mouseY * nextScale + posY;
+        scale = nextScale;
+
+        // Если вернулись к исходному размеру — сбрасываем сдвиги центра
+        if (scale === 1) { posX = 0; posY = 0; }
+
+        // Передаем координаты и масштаб в CSS
+        mapContainer.style.setProperty('--map-scale', scale);
+        mapContainer.style.setProperty('--zoom-x', `${posX}px`);
+        mapContainer.style.setProperty('--zoom-y', `${posY}px`);
+    }, { passive: false });
+
+
+    // 2. СЛУШАТЕЛЬ УМЕНЬШЕНИЯ ДЛЯ СМАРТФОНОВ (Родной мобильный зум)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            mapContainer.style.setProperty('--mobile-zoom', window.visualViewport.scale);
+        });
+    }
+
+
+    // 3. БАЗОВАЯ ЛОГИКА (Авто-ID, Сбор тыкв, Показ JPG скринов)
     document.querySelectorAll('.marker.pumpkin').forEach((marker, index) => {
-        if (!marker.id) {
-            marker.id = 'p' + (index + 1);
-        }
-        
-        // Проверяем память браузера: если эта тыква была собрана ранее, делаем её серой
+        if (!marker.id) marker.id = 'p' + (index + 1);
         if (localStorage.getItem(marker.id) === 'collected') {
             marker.classList.add('collected');
         }
     });
 
-    // ОБРАБОТКА КЛИКОВ
     mapContainer.addEventListener('click', (event) => {
         const clickedMarker = event.target.closest('.marker.pumpkin');
 
         if (clickedMarker) {
             event.stopPropagation(); 
-            
-            // Если кликнули по самой картинке скриншота внутри тултипа — ничего не делаем
             if (event.target.tagName === 'IMG') return;
 
-            // ЛОГИКА СБОРА ТЫКВЫ: переключаем серый класс (собрано / не собрано)
+            // Клик по тыкве (собрано / не собрано)
             if (clickedMarker.classList.contains('collected')) {
                 clickedMarker.classList.remove('collected');
-                localStorage.removeItem(clickedMarker.id); // Удаляем из памяти
+                localStorage.removeItem(clickedMarker.id); 
             } else {
                 clickedMarker.classList.add('collected');
-                localStorage.setItem(clickedMarker.id, 'collected'); // Сохраняем в память
+                localStorage.setItem(clickedMarker.id, 'collected'); 
             }
 
-            // ЛОГИКА ДЛЯ ИГРОКА: Показ скрина при клике и динамическая загрузка JPG
+            // Открытие скриншота весом 40 КБ
             if (clickedMarker.classList.contains('show-screenshot')) {
                 clickedMarker.classList.remove('show-screenshot');
             } else {
-                // Скрываем другие открытые скрины
                 document.querySelectorAll('.marker.pumpkin').forEach(m => m.classList.remove('show-screenshot'));
                 
-                // МАГИЯ СКОРОСТИ: Находим картинку внутри кликнутого маркера
                 const img = clickedMarker.querySelector('img');
                 if (img && img.getAttribute('data-src')) {
-                    // Подгружаем JPG файл весом 40 КБ строго в этот миллисекундный момент
                     img.src = img.getAttribute('data-src');
-                    img.removeAttribute('data-src'); // Очищаем временный атрибут
+                    img.removeAttribute('data-src');
                 }
-
-                // Показываем скриншот
                 clickedMarker.classList.add('show-screenshot');
             }
 
         } else {
-            // ЛОГИКА ДЛЯ РАЗРАБОТЧИКА: Клик мимо — выдаем проценты координат в консоль (F12)
-            const rect = mapContainer.getBoundingClientRect();
-            const left = ((event.clientX - rect.left) / rect.width * 100).toFixed(1);
-            const top = ((event.clientY - rect.top) / rect.height * 100).toFixed(1);
-            
-            // Автоматически считаем, какой номер будет у следующей тыквы
-            const nextIndex = document.querySelectorAll('.marker.pumpkin').length + 1;
-            
-            // ИСПРАВЛЕНО: Выводит идеально чистую и готовую строку для вставки в HTML
-            console.log(`<div class="marker pumpkin" id="${nextIndex}" style="left: ${left}%; top: ${top}%;" data-title="Тыква ${nextIndex}"><img data-src="./points/${nextIndex}.jpg" alt="в работе"></div>`);
-
-            // Закрываем скрины при клике на пустое место карты
+            // Клик мимо — закрыть окна
             document.querySelectorAll('.marker.pumpkin').forEach(marker => {
                 marker.classList.remove('show-screenshot');
             });
+
+            // Код для разработчика (Генерация новых точек в F12)
+            const rect = mapContainer.getBoundingClientRect();
+            const left = (((event.clientX - rect.left) / scale) / 684 * 100).toFixed(1);
+            const top = (((event.clientY - rect.top) / scale) / 1017 * 100).toFixed(1);
+            const nextIndex = document.querySelectorAll('.marker.pumpkin').length + 1;
+            
+            console.log(`<div class="marker pumpkin" style="left: ${left}%; top: ${top}%;" data-title="Тыква ${nextIndex}"><img data-src="./points/${nextIndex}.jpg" alt="в работе"></div>`);
         }
     });
-
-    // СЛУШАТЕЛЬ ДЛЯ УМЕНЬШЕНИЯ МЕТОК ПРИ СТАНДАРТНОМ ЗУМЕ БРАУЗЕРА
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-            // Получаем текущий масштаб страницы (на смартфонах при щипке он станет 2, 3, 4 и т.д.)
-            const currentZoom = window.visualViewport.scale;
-            
-            // Передаем этот масштаб в CSS-переменную карты
-            mapContainer.style.setProperty('--marker-zoom', currentZoom);
-        });
-    }
-
-    // ЗУМ НА КОЛЕСИКО МЫШИ ДЛЯ ПК
-    let pcScale = 1;
-
-    mapContainer.addEventListener('wheel', (e) => {
-        e.preventDefault(); // Запрещаем прокрутку самой страницы вверх-вниз
-
-        // Если крутим вверх — приближаем, вниз — отдаляем
-        if (e.deltaY < 0) {
-            pcScale = Math.min(pcScale + 0.2, 4); // Максимальный зум в 4 раза
-        } else {
-            pcScale = Math.max(pcScale - 0.2, 1); // Минимальный зум — исходный (1х)
-        }
-
-        // Передаем значение в CSS
-        mapContainer.style.setProperty('--pc-zoom', pcScale);
-    }, { passive: false });
-
 </script>
 
 
