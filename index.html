@@ -98,6 +98,12 @@
             animation: fadeIn 0.2s ease-in-out;
         }
 
+        /* Убирает прозрачность */
+        .marker.show-screenshot {
+            z-index: 9999; /* Поднимает саму активную точку и её скриншот выше всех остальных точек на карте */
+        }
+
+
         /* Плавное появление */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateX(-50%) translateY(5px); }
