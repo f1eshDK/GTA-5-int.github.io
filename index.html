@@ -135,18 +135,28 @@
         filter: none !important;
     }
 
-    .marker.pumpkin img {
-        color: #ffa600; 
-        font-family: 'Segoe UI', Impact, Arial, 'Comic Sans MS'; 
-        font-size: 12px; 
-        font-weight: bold; 
-        text-align: center;
-        text-shadow: 
-            -1px -1px 0 #000,  
-            1px -1px 0 #000,
-            -1px  1px 0 #000,
-            1px  1px 0 #000;
+        /* Легкий и минималистичный стиль меток без лагов */
+    .marker.pumpkin {
+        /* Чистый оранжевый цвет без тяжелых градиентов */
+        background-color: #ff6a00; 
+        
+        /* Статичная черная рамка (всегда четкая и не нагружает систему) */
+        border: 2px solid #000000; 
+        
+        /* Простое статичное свечение без использования формул calc() */
+        box-shadow: 0 0 6px #ff6a00;
+        
+        /* Принудительное включение аппаратного ускорения для гладкости */
+        will-change: transform;
+        transform: translate(-50%, -50%) translateZ(0);
     }
+
+    /* При наведении мышки слегка подсвечиваем точку (простой эффект вместо тяжелой анимации) */
+    .marker.pumpkin:hover {
+        background-color: #ff8c00;
+        box-shadow: 0 0 10px #ff8c00;
+    }
+
 </style>
 
 
