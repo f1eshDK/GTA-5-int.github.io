@@ -43,7 +43,7 @@
         position: absolute;
         width: calc(12px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
         aspect-ratio: 1 / 1; 
-        border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid white;
+        border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid #ff8c00;
         background-color: red;
         border-radius: 50%;
         transform: translate(-50%, -50%); 
@@ -54,9 +54,7 @@
 
     /* Стиль для тыкв */
     .marker.pumpkin {
-        background-color: #ff8c00; 
-        border: 1px solid #000000; 
-        box-shadow: 0 0 3px #ff8c00;
+        background-color: #ff8c00;
     }
 
     /* Стиль всплывающего окна с текстом */
@@ -133,14 +131,6 @@
     .marker.pumpkin.collected img {
         opacity: 1 !important;
         filter: none !important;
-    }
-
-        /* Легкий и минималистичный стиль меток без лагов */
-    .marker.pumpkin {
-        
-        /* Статичная черная рамка (всегда четкая и не нагружает систему) */
-        border: 1px solid #000000; 
-        
     }
 
 </style>
