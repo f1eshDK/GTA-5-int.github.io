@@ -5,155 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GTA5-int</title>
     <style>
-        body
-        {
-            margin: 0;
-            padding: 20px;
-            background-color: rgb(58, 75, 82); /* Цвет океана */
-            display: flex;
-            justify-content: center;
-        }
+    body {
+        margin: 0;
+        padding: 20px;
+        background-color: rgb(58, 75, 82); /* Цвет океана */
+        display: flex;
+        justify-content: center;
+        /* ИСПРАВЛЕНИЕ ДЛЯ МОБИЛЬНЫХ: не дает контенту ломать границы экрана */
+        overflow-x: hidden; 
+    }
 
-        /* Фиксируем размеры строго по пикселям исходника, чтобы метки не ехали */
-        .map-container {
-            position: relative;
-            width: 684px;  
-            height: 1017px; 
-            
-            transform-origin: 0 0;
-            transform: translate(var(--zoom-x, 0px), var(--zoom-y, 0px)) scale(var(--map-scale, 1));
-            transition: transform 0.1s ease-out;
-        }
+    /* Контейнер карты */
+    .map-container {
+        position: relative;
+        width: 684px;  
+        height: 1017px; 
+        
+        /* ИСПРАВЛЕНИЕ ДЛЯ МОБИЛЬНЫХ: предотвращает жесткое растягивание и искажение пропорций */
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 684 / 1017;
 
-        /* Картинка теперь жестко занимает 100% контейнера */
-        .map-image {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
+        transform-origin: 0 0;
+        transform: translate(var(--zoom-x, 0px), var(--zoom-y, 0px)) scale(var(--map-scale, 1));
+        transition: transform 0.1s ease-out;
+    }
 
-        /* Общий стиль для всех меток */
-        .marker {
-            position: absolute;
-    
-        /* Уменьшаем физический размер точки при зуме на ПК или на телефоне */
-            width: calc(12px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
-            aspect-ratio: 1 / 1; /* ЖЕСТКАЯ СВЯЗКА: высота всегда равна ширине (пропорция 1 к 1) */
-            border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid white;
-    
-            background-color: red;
-            border-radius: 50%;
-            transform: translate(-50%, -50%); 
-            cursor: pointer;
-            z-index: 10;
-            box-sizing: border-box; 
-        }
+    /* Картинка подложки карты */
+    .map-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
 
-        /* Стиль для тыкв */
-        .marker.pumpkin {
-            background-color: #ff8c00; 
-            border: 1px solid #000000; 
-            box-shadow: 0 0 3px #ff8c00;
-        }
+    /* Общий стиль для всех меток */
+    .marker {
+        position: absolute;
+        width: calc(12px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
+        aspect-ratio: 1 / 1; 
+        border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid white;
+        background-color: red;
+        border-radius: 50%;
+        transform: translate(-50%, -50%); 
+        cursor: pointer;
+        z-index: 10;
+        box-sizing: border-box; 
+    }
 
-        /* Обновленный стиль всплывающего окна с текстом */
-        .marker::after {
-            content: attr(data-title);
-            position: absolute;
-            bottom: 25px; /* Чуть приподняли над меткой */
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(20, 20, 20, 0.95); /* Темный стильный фон */
-            color: white;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: Arial, sans-serif;
-            white-space: pre-line; /* Позволяет переносить текст на новую строку */
-            display: none; 
-            z-index: 20;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            border: 1px solid #ff8c00; /* Оранжевая рамка под стиль Хэллоуина */
-            text-align: center;
-        }
+    /* Стиль для тыкв */
+    .marker.pumpkin {
+        background-color: #ff8c00; 
+        border: 1px solid #000000; 
+        box-shadow: 0 0 3px #ff8c00;
+    }
 
-        /* Показываем ТЕКСТОВУЮ подсказку только при наведении (hover), если скрин не открыт */
-        .marker:hover::after {
-            display: block;
-        }
-        /* Если скрин открыт, скрываем текстовую подсказку, чтобы она не мешала */
-        .marker.show-screenshot:hover::after {
-            display: none;
-        }
+    /* Стиль всплывающего окна с текстом */
+    .marker::after {
+        content: attr(data-title);
+        position: absolute;
+        bottom: 25px; 
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(20, 20, 20, 0.95); 
+        color: white;
+        padding: 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: Arial, sans-serif;
+        white-space: pre-line; 
+        display: none; 
+        z-index: 20;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        border: 1px solid #ff8c00; 
+        text-align: center;
+    }
 
-        /* Базовый стиль скрытого скрин */
-        .marker img {
-            display: none;
-            position: absolute;
-            bottom: 25px; /* Отображаем строго над тыквой */
-            left: 50%;
-            transform: translateX(-50%);
-            /* МАГИЯ: Скриншот уменьшается пропорционально зуму, чтобы не становиться гигантским на весь экран */
-            width: calc(320px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
-            aspect-ratio: 16 / 9; /* ЖЕСТКАЯ СВЯЗКА: скриншот всегда держит игровое соотношение 16:9 */
-            height: auto; /* Браузер сам выставит высоту на базе аспекта */
-            
-            border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid #ff8c00;
-            border-radius: 6px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
-            z-index: 100;
-            pointer-events: none; /* Чтобы картинка не мешала кликать по карте */
-            object-fit: cover;
-        }
+    .marker:hover::after { display: block; }
+    .marker.show-screenshot:hover::after { display: none; }
 
-        /* Класс, который JavaScript будет добавлять для показа скрина */
-        .marker.show-screenshot img {
-            display: block;
-            animation: fadeIn 0.2s ease-in-out;
-        }
+    /* БАЗОВЫЙ СТИЛЬ СКРИНШОТА (Здесь основные исправления) */
+    .marker img {
+        display: none;
+        position: absolute;
+        bottom: 25px; 
+        left: 50%;
+        transform: translateX(-50%);
+        
+        /* Вычисляемая ширина скриншота */
+        width: calc(320px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
+        
+        /* ИСПРАВЛЕНИЕ ДЛЯ ПК: Картинка сжимается вслед за зумом, но НЕ МЕНЬШЕ 220px. 
+           Это создаст красивый предел при отдалении карты */
+        min-width: 220px; 
+        /* Ограничитель сверху, чтобы при огромном приближении картинка не перекрывала всё */
+        max-width: 450px; 
 
-        /* Убирает прозрачность */
-        .marker.show-screenshot {
-            z-index: 9999; /* Поднимает саму активную точку и её скриншот выше всех остальных точек на карте */
-        }
+        aspect-ratio: 16 / 9; 
+        height: auto; 
+        
+        border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid #ff8c00;
+        border-radius: 6px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+        z-index: 100;
+        pointer-events: none; 
+        object-fit: cover;
+    }
 
+    /* Класс показа скрина */
+    .marker.show-screenshot img {
+        display: block;
+        animation: fadeIn 0.2s ease-in-out;
+    }
 
-        /* Плавное появление */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(5px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
+    .marker.show-screenshot { z-index: 9999; }
 
-        /* ИСПРАВЛЕНО: Свойство opacity применяется только к фону и рамке самой точки */
-        .marker.pumpkin.collected {
-            background-color: rgba(102, 102, 102, 0.5); /* Серый цвет с прозрачностью 50% */
-            border: 1px solid rgba(153, 153, 153, 0.5); /* Серая рамка с прозрачностью 50% */
-            box-shadow: none;                            /* Выключаем оранжевое свечение */
-        }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
 
-/* Принудительно возвращаем scriny внутри собранной тыквы 100% яркость */
-.marker.pumpkin.collected img {
-    opacity: 1 !important;
-    filter: none !important;
-}
+    .marker.pumpkin.collected {
+        background-color: rgba(102, 102, 102, 0.5); 
+        border: 1px solid rgba(153, 153, 153, 0.5); 
+        box-shadow: none;                            
+    }
 
-/* Стилизация текста ALT, пока картинка-скриншот не загрузилась */
-.marker.pumpkin img {
-    color: #ffa600; 
-    font-family: 'Segoe UI', Impact, Arial, 'Comic Sans MS'; 
-    font-size: 12px; 
-    font-weight: bold; 
-    text-align: center;
+    .marker.pumpkin.collected img {
+        opacity: 1 !important;
+        filter: none !important;
+    }
 
-    /* Идеальная черная обводка во все стороны */
-    text-shadow: 
-        -1px -1px 0 #000,  
-        1px -1px 0 #000,
-        -1px  1px 0 #000,
-        1px  1px 0 #000;
-}
+    .marker.pumpkin img {
+        color: #ffa600; 
+        font-family: 'Segoe UI', Impact, Arial, 'Comic Sans MS'; 
+        font-size: 12px; 
+        font-weight: bold; 
+        text-align: center;
+        text-shadow: 
+            -1px -1px 0 #000,  
+            1px -1px 0 #000,
+            -1px  1px 0 #000,
+            1px  1px 0 #000;
+    }
+</style>
 
-    </style>
 
 </head>
 <body>
