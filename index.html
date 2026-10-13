@@ -365,7 +365,7 @@
 
         // Рассчитываем новый масштаб
         const zoomFactor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
-        const nextScale = Math.max(1, Math.min(scale * zoomFactor, 15)); // Макс зум 15х
+        const nextScale = Math.max(1, Math.min(scale * zoomFactor, 25)); // Макс зум 25х
 
         // Корректируем сдвиг X и Y, чтобы точка под курсором осталась на месте
         posX = e.clientX - rect.left - mouseX * nextScale + posX;
