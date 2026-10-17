@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTA5MAPS</title>
+    <style>
+    body {
+        margin: 0;
+        padding: 20px;
+        background-color: rgb(58, 75, 82); /* Цвет океана */
+        display: flex;
+        justify-content: center;
+        /* ИСПРАВЛЕНИЕ ДЛЯ МОБИЛЬНЫХ: не дает контенту ломать границы экрана */
+        overflow-x: hidden; 
+    }
+
+    /* Контейнер карты */
+    .map-container {
+        position: relative;
+        width: 684px;  
+        height: 1017px; 
+        
+        /* ИСПРАВЛЕНИЕ ДЛЯ МОБИЛЬНЫХ: предотвращает жесткое растягивание и искажение пропорций */
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 684 / 1017;
+
+        transform-origin: 0 0;
+        transform: translate(var(--zoom-x, 0px), var(--zoom-y, 0px)) scale(var(--map-scale, 1));
+        transition: transform 0.1s ease-out;
+    }
+
+    /* Картинка подложки карты */
+    .map-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    /* Общий стиль для всех меток */
+    .marker {
+        position: absolute;
+        width: calc(12px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
+        aspect-ratio: 1 / 1; 
+        border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid #782092;
+        background-color: red;
+        border-radius: 50%;
+        transform: translate(-50%, -50%); 
+        cursor: pointer;
+        z-index: 10;
+        box-sizing: border-box; 
+    }
+
+    /* Стиль для карт */
+    .marker.ghost {
+        background-color: #782092;
+    }
+
+    /* Стиль всплывающего окна с текстом */
+    .marker::after {
+        content: attr(data-title);
+        position: absolute;
+        bottom: 25px; 
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(20, 20, 20, 0.95); 
+        color: white;
+        padding: 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: Arial, sans-serif;
+        white-space: pre-line; 
+        display: none; 
+        z-index: 20;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        border: 1px solid rgb(17, 18, 24); 
+        text-align: center;
+    }
+
+    .marker:hover::after { display: block; }
+    .marker.show-screenshot:hover::after { display: none; }
+
+    /* БАЗОВЫЙ СТИЛЬ СКРИНШОТА (Здесь основные исправления) */
+    .marker img {
+        display: none;
+        position: absolute;
+        bottom: 25px; 
+        left: 50%;
+        transform: translateX(-50%);
+        
+        /* Вычисляемая ширина скриншота */
+        width: calc(320px / (var(--map-scale, 1) * var(--mobile-zoom, 1)));
+        
+        /* ИСПРАВЛЕНИЕ ДЛЯ ПК: Картинка сжимается вслед за зумом, но НЕ МЕНЬШЕ 220px. 
+           Это создаст красивый предел при отдалении карты */
+        min-width: 130px; 
+        /* Ограничитель сверху, чтобы при огромном приближении картинка не перекрывала всё */
+        max-width: 450px; 
+
+        aspect-ratio: 16 / 9; 
+        height: auto; 
+        
+        border: calc(2px / (var(--map-scale, 1) * var(--mobile-zoom, 1))) solid #782092;
+        border-radius: 6px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+        z-index: 100;
+        pointer-events: none; 
+        object-fit: cover;
+    }
+
+    /* Класс показа скрина */
+    .marker.show-screenshot img {
+        display: block;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .marker.show-screenshot { z-index: 9999; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .marker.ghost.collected {
+        background-color: rgba(102, 102, 102, 0.5); 
+        border: 1px solid rgba(153, 153, 153, 0.5); 
+        box-shadow: none;                            
+    }
+
+    .marker.ghost.collected img {
+        opacity: 1 !important;
+        filter: none !important;
+    }
+
+</style>
+
+
+</head>
+<body>
+    <!-- Контейнер с картой -->
+    <div class="map-container"> 
+        <!-- Картинка фона -->
+        <img src="./map.jpg" alt="Карта" class="map-image">  
+        <!-- ТОЧНЫЕ метки -->
+<div class="marker ghost" id="ghost_1" style="left: 46.7%; top: 12.9%;" data-title="Призрак 1"><img data-src="./ghosts/1.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_2" style="left: 47.3%; top: 70.9%;" data-title="Призрак 2"><img data-src="./ghosts/2.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_3" style="left: 67.1%; top: 25.7%;" data-title="Призрак 3"><img data-src="./ghosts/3.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_4" style="left: 39.7%; top: 78.6%;" data-title="Призрак 4"><img data-src="./ghosts/4.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_5" style="left: 84.1%; top: 23.9%;" data-title="Призрак 5"><img data-src="./ghosts/5.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_6" style="left: 57.2%; top: 78.1%;" data-title="Призрак 6"><img data-src="./ghosts/6.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_7" style="left: 47.7%; top: 39.0%;" data-title="Призрак 7"><img data-src="./ghosts/7.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_8" style="left: 37.5%; top: 67.3%;" data-title="Призрак 8"><img data-src="./ghosts/8.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_9" style="left: 27.9%; top: 46.7%;" data-title="Призрак 9"><img data-src="./ghosts/9.jpg" loading="lazy" alt="в работе"></div>
+<div class="marker ghost" id="ghost_10" style="left: 28.1%; top: 23.9%;" data-title="Призрак 10"><img data-src="./ghosts/10.jpg" loading="lazy" alt="в работе"></div>
+
+</div>
+
+<script>
+    const mapContainer = document.querySelector('.map-container');
+
+    // Настройки для ПК-зума за курсором
+    let scale = 1;
+    let posX = 0;
+    let posY = 0;
+
+    // 1. УМНЫЙ ЗУМ ЗА МЫШКОЙ (ПК)
+    mapContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+
+        const rect = mapContainer.getBoundingClientRect();
+        // Находим координаты мышки относительно самой карты
+        const mouseX = (e.clientX - rect.left) / scale;
+        const mouseY = (e.clientY - rect.top) / scale;
+
+        // Рассчитываем новый масштаб
+        const zoomFactor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+        const nextScale = Math.max(1, Math.min(scale * zoomFactor, 25)); // Макс зум 25х
+
+        // Корректируем сдвиг X и Y, чтобы точка под курсором осталась на месте
+        posX = e.clientX - rect.left - mouseX * nextScale + posX;
+        posY = e.clientY - rect.top - mouseY * nextScale + posY;
+        scale = nextScale;
+
+        // Если вернулись к исходному размеру — сбрасываем сдвиги центра
+        if (scale === 1) { posX = 0; posY = 0; }
+
+        // Передаем координаты и масштаб в CSS
+        mapContainer.style.setProperty('--map-scale', scale);
+        mapContainer.style.setProperty('--zoom-x', `${posX}px`);
+        mapContainer.style.setProperty('--zoom-y', `${posY}px`);
+    }, { passive: false });
+
+
+    // 2. СЛУШАТЕЛЬ УМЕНЬШЕНИЯ ДЛЯ СМАРТФОНОВ (Родной мобильный зум)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            mapContainer.style.setProperty('--mobile-zoom', window.visualViewport.scale);
+        });
+    }
+
+
+    // 3. БАЗОВАЯ ЛОГИКА (Авто-ID, Сбор Карт, Показ JPG скринов)
+    document.querySelectorAll('.marker.ghost').forEach((marker, index) => {
+        if (!marker.id) marker.id = 'p' + (index + 1);
+        if (localStorage.getItem(marker.id) === 'collected') {
+            marker.classList.add('collected');
+        }
+    });
+
+    mapContainer.addEventListener('click', (event) => {
+        const clickedMarker = event.target.closest('.marker.ghost');
+
+        if (clickedMarker) {
+            event.stopPropagation(); 
+            if (event.target.tagName === 'IMG') return;
+
+            // Клик по карте (собрано / не собрано)
+            if (clickedMarker.classList.contains('collected')) {
+                clickedMarker.classList.remove('collected');
+                localStorage.removeItem(clickedMarker.id); 
+            } else {
+                clickedMarker.classList.add('collected');
+                localStorage.setItem(clickedMarker.id, 'collected'); 
+            }
+
+            // Открытие скриншота весом 40 КБ
+            if (clickedMarker.classList.contains('show-screenshot')) {
+                clickedMarker.classList.remove('show-screenshot');
+            } else {
+                document.querySelectorAll('.marker.ghost').forEach(m => m.classList.remove('show-screenshot'));
+                
+                const img = clickedMarker.querySelector('img');
+                if (img && img.getAttribute('data-src')) {
+                    img.src = img.getAttribute('data-src');
+                    img.removeAttribute('data-src');
+                }
+                clickedMarker.classList.add('show-screenshot');
+            }
+
+        } else {
+            // Клик мимо — закрыть окна
+            document.querySelectorAll('.marker.ghost').forEach(marker => {
+                marker.classList.remove('show-screenshot');
+            });
+
+            // Код для разработчика (Генерация новых точек в F12)
+            const rect = mapContainer.getBoundingClientRect();
+            const left = (((event.clientX - rect.left) / scale) / 684 * 100).toFixed(1);
+            const top = (((event.clientY - rect.top) / scale) / 1017 * 100).toFixed(1);
+            const nextIndex = document.querySelectorAll('.marker.ghost').length + 1;
+            
+            console.log(`<div class="marker ghost" style="left: ${left}%; top: ${top}%;" data-title="Карта ${nextIndex}"><img data-src="./ghosts/${nextIndex}.jpg" alt="в работе"></div>`);
+        }
+    });
+</script>
+
+
+</body>
+</html>
